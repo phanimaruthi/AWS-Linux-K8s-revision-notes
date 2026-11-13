@@ -1,0 +1,234 @@
+# Day 04 – Linux Administration: SSH Key-Based Authentication
+
+## 🎯 Objective
+
+Configure password-less SSH authentication from the `thor` user on the Jump Host to all three application servers in the xFusionCorp Industries (KodeKloud Nautilus) environment.
+
+The objective was to enable automated SSH access without repeatedly entering remote users' passwords.
+
+## 🖥️ Lab Environment
+
+| Machine | Hostname | User |
+|---|---|---|
+| Jump Host | jump-host | thor |
+| App Server 1 | stapp01 | tony |
+| App Server 2 | stapp02 | steve |
+| App Server 3 | stapp03 | banner |
+
+## 1. Understanding SSH Authentication
+
+Previously, connecting to an application server required entering the remote user's password.
+
+For example:
+
+```bash
+ssh tony@stapp01
+```
+
+With SSH key-based authentication, we can establish a trusted connection without entering the remote user's password every time.
+
+SSH uses two keys:
+
+- **Private Key:** Kept securely on the source machine (Jump Host).
+- **Public Key:** Copied to the destination server.
+
+The private key must never be shared.
+
+## 2. Generate an SSH Key Pair
+
+Logged in to the Jump Host as `thor`.
+
+First, checked the current user:
+
+```bash
+whoami
+```
+
+Generated an RSA key pair:
+
+```bash
+ssh-keygen -t rsa -b 4096
+```
+
+During key generation:
+- Accepted the default file location.
+- Left the passphrase empty for unattended lab automation.
+- Completed the key generation process.
+
+Two files were generated:
+
+```text
+~/.ssh/id_rsa
+~/.ssh/id_rsa.pub
+```
+
+| File | Purpose |
+|---|---|
+| id_rsa | Private key |
+| id_rsa.pub | Public key |
+
+## 3. Copy the Public Key to Application Servers
+
+Used the `ssh-copy-id` command to install the public key on each application server.
+
+**App Server 1:**
+
+```bash
+ssh-copy-id tony@stapp01
+```
+
+**App Server 2:**
+
+```bash
+ssh-copy-id steve@stapp02
+```
+
+**App Server 3:**
+
+```bash
+ssh-copy-id banner@stapp03
+```
+
+Initially, the respective remote user passwords were required to authorize the key installation.
+
+The `ssh-copy-id` command:
+1. Reads the public key from the Jump Host.
+2. Connects to the destination server.
+3. Adds the public key to the remote user's `~/.ssh/authorized_keys` file.
+4. Sets appropriate SSH directory and file permissions.
+
+## 4. Understanding authorized_keys
+
+On each application server, the public key is stored in:
+
+```bash
+~/.ssh/authorized_keys
+```
+
+This file contains the public keys trusted by that particular user account.
+
+For example:
+
+```text
+stapp01 → /home/tony/.ssh/authorized_keys
+stapp02 → /home/steve/.ssh/authorized_keys
+stapp03 → /home/banner/.ssh/authorized_keys
+```
+
+The same public key belonging to `thor` can be authorized on multiple servers.
+
+## 5. Verify Password-less SSH Authentication
+
+Executed the following commands from the Jump Host:
+
+```bash
+ssh tony@stapp01 hostname
+ssh steve@stapp02 hostname
+ssh banner@stapp03 hostname
+```
+
+Expected output:
+
+```text
+stapp01
+stapp02
+stapp03
+```
+
+The commands executed successfully without requiring the respective remote account passwords.
+
+## 6. Understanding the SSH Command
+
+Example:
+
+```bash
+ssh steve@stapp02 hostname
+```
+
+| Component | Meaning |
+|---|---|
+| ssh | Secure Shell command |
+| steve | Remote username |
+| stapp02 | Destination hostname |
+| hostname | Command executed on the remote server |
+
+Unlike a normal SSH login, this command executes `hostname` remotely and returns the output without opening an interactive shell.
+
+## 7. SSH Authentication Architecture
+
+```text
+             JUMP HOST
+            User: thor
+                 |
+          SSH Key Pair
+                 |
+          Private Key
+                 |
+          Public Key
+                 |
+       +---------+---------+
+       |         |         |
+       v         v         v
+    stapp01   stapp02   stapp03
+     tony      steve     banner
+       |         |         |
+       v         v         v
+  authorized_keys on each remote server
+```
+
+The private key remains on the Jump Host.
+
+Each application server stores the trusted public key in the respective user's `authorized_keys` file.
+
+## 8. Important Commands Learned
+
+| Command | Purpose |
+|---|---|
+| `whoami` | Displays the current user |
+| `ls -la ~/.ssh/` | Lists SSH directory contents |
+| `ssh-keygen` | Generates SSH key pairs |
+| `ssh-copy-id` | Copies and installs a public key on a remote server |
+| `ssh user@host` | Connects to a remote server |
+| `ssh user@host hostname` | Executes a remote command |
+| `exit` | Exits the remote shell |
+
+## 9. Key Learnings
+
+1. Understood the difference between private and public SSH keys.
+2. Learned how to generate an RSA SSH key pair.
+3. Understood how `ssh-copy-id` works.
+4. Learned about the `authorized_keys` file.
+5. Configured password-less SSH authentication across multiple application servers.
+6. Understood how SSH enables automated server administration.
+7. Learned how to execute commands remotely without opening an interactive session.
+
+## 10. Real-World DevOps Applications
+
+SSH key-based authentication is widely used in:
+
+- **Ansible:** Connecting to managed servers for configuration management.
+- **CI/CD Pipelines:** Automating deployments to remote servers.
+- **Server Administration:** Managing multiple Linux machines.
+- **Backup Automation:** Running scheduled backup scripts remotely.
+- **Infrastructure Management:** Executing commands across multiple servers.
+
+## Important Note
+
+Password-less SSH authentication and password-less sudo are two different concepts.
+
+- SSH key authentication removes the need to enter the remote account password during SSH login.
+- Password-less sudo allows a user to execute privileged commands without entering a sudo password.
+
+Today's task configured SSH key-based authentication only.
+
+---
+
+## Final Outcome
+
+Successfully configured password-less SSH authentication from `thor` on the Jump Host to all three application servers using their respective users.
+
+**Status: Completed ✅**
+
+**Platform:** KodeKloud  
+**Environment:** Nautilus / xFusionCorp Industries  
+**Topic:** Linux Administration | SSH | Authentication | DevOps Automation
